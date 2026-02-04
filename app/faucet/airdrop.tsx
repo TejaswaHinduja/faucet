@@ -1,21 +1,23 @@
 "use client"
 import { Button } from "@/components/ui/button";
-import { useWallet,useConnection } from "@solana/wallet-adapter-react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-export function Airdrop(){
+export function ShowSolBalance() {
+    const { connection } = useConnection();
+    const wallet = useWallet();
 
-const wallet=useWallet();
-const {connection}=useConnection()
-async function sendAirdrop(){
-    if (!wallet.publicKey) return;
-    console.log(wallet.publicKey.toBase58())
-    await connection.requestAirdrop(wallet.publicKey,10000000000)
-    alert("airdrop sent")
+    async function getBalance() { 
+        if (wallet.publicKey) {
 
-}
-return <div>
-    {wallet.publicKey?.toString()}
-    <Button onClick={sendAirdrop} disabled={!wallet.publicKey}>Send AirDrop</Button>
-</div>
-
+            const balance = await connection.getBalance(wallet.publicKey);
+            //@ts-ignore
+            document.getElementById("balance").innerHTML = balance / LAMPORTS_PER_SOL;
+        }
+    }
+    
+    getBalance();
+    return <div>
+        <p>SOL Balance:</p> <div id="balance"></div>
+    </div>
 }

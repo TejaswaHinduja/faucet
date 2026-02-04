@@ -4,7 +4,7 @@ import { UnsafeBurnerWalletAdapter,PhantomWalletAdapter} from "@solana/wallet-ad
 import { WalletModalProvider,WalletDisconnectButton,WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
-import { Airdrop } from "./airdrop";
+import { ShowSolBalance } from "./airdrop";
 
 export function Faucet(){
     
@@ -15,7 +15,7 @@ export function Faucet(){
                     <WalletModalProvider>
                        <WalletMultiButton />
                        <WalletDisconnectButton/>
-                       <Airdrop></Airdrop>
+                       <ShowSolBalance></ShowSolBalance>
                     </WalletModalProvider>
                 </WalletProvider>
             </ConnectionProvider>
