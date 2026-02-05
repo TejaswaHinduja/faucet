@@ -14,8 +14,10 @@ export function Faucet(){
             <ConnectionProvider endpoint={"https://solana-devnet.g.alchemy.com/v2/l_w7iiEfcszPM-w65B54I"}>
                 <WalletProvider wallets={[]} autoConnect>
                     <WalletModalProvider>
-                       <WalletMultiButton />
-                       <WalletDisconnectButton/>
+                       <div className="flex justify-center p-20">
+                        <WalletMultiButton />
+                        <WalletDisconnectButton />
+                        </div>
                        <ShowSolBalance></ShowSolBalance>
                        <Token></Token>
                     </WalletModalProvider>
