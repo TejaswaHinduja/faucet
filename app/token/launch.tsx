@@ -1,6 +1,11 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useForm,SubmitHandler } from "react-hook-form"
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { MINT_SIZE, TOKEN_2022_PROGRAM_ID, createInitializeMint2Instruction, createMint, getMinimumBalanceForRentExemptMint } from "@solana/spl-token"
+import { Keypair, SystemProgram, Transaction } from "@solana/web3.js";
+
+
 
 
 type FormData={
@@ -16,7 +21,16 @@ export function Token(){
 
 
     async function handleTrans(){
+        const {connection}=useConnection();
+        const wallet=useWallet();
 
+        const Lamport=await getMinimumBalanceForRentExemptMint(connection)
+        const transaction=new Transaction().add(
+            SystemProgram.createAccount({
+                fromPubkey:wallet.publicKey
+
+            })
+        )
 
     }
     return <div>
