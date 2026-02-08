@@ -2,8 +2,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useForm,SubmitHandler } from "react-hook-form"
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { MINT_SIZE, TOKEN_2022_PROGRAM_ID, createInitializeMint2Instruction, createMint, getMinimumBalanceForRentExemptMint } from "@solana/spl-token"
-import { Keypair, SystemProgram, Transaction } from "@solana/web3.js";
+import { MINT_SIZE, TOKEN_2022_PROGRAM_ID, createInitializeMint2Instruction, createInitializeMetadataPointerInstruction,createMint, getMinimumBalanceForRentExemptMint } from "@solana/spl-token"
+import { Keypair, SystemProgram, Transaction } from "@solana/web3.js"; 
 
 async function handleTrans(){
     const {connection}=useConnection();
@@ -12,6 +12,13 @@ async function handleTrans(){
         return "please connect a wallet"
     }
     const keypair=Keypair.generate();
+    const metaData={
+        mint:keypair.publicKey,
+        name:"",
+        symbol:"",
+        uri:"",
+
+    }
 
     const lamports=await getMinimumBalanceForRentExemptMint(connection)
     const transaction=new Transaction().add(
@@ -24,7 +31,8 @@ async function handleTrans(){
 
         }
     ),
-    createInitializeMint2Instruction(keypair.publicKey, 9, wallet.publicKey, wallet.publicKey, TOKEN_2022_PROGRAM_ID)
+    createInitializeMetadataPointerInstruction(keypair.publicKey,wallet.publicKey,keypair.publicKey,TOKEN_2022_PROGRAM_ID),
+    createInitializeMint2Instruction(keypair.publicKey, 9, wallet.publicKey, null, TOKEN_2022_PROGRAM_ID)
     )
     transaction.feePayer=wallet.publicKey
     transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
@@ -44,7 +52,6 @@ type FormData={
 export function Token(){
     const {register,handleSubmit}=useForm<FormData>();
     const onSubmit:SubmitHandler<FormData>=(data)=>{console.log(data)}
-
     
     return <div>
         <form onSubmit={handleSubmit(onSubmit)}>
