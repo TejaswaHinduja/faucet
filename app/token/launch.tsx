@@ -4,14 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useForm, SubmitHandler } from "react-hook-form"
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { 
-    TOKEN_2022_PROGRAM_ID, 
-    getMintLen,
-    createInitializeMetadataPointerInstruction,
-    createInitializeMintInstruction,
-    TYPE_SIZE,
-    LENGTH_SIZE,
-    ExtensionType
+import { TOKEN_2022_PROGRAM_ID, getMintLen,createInitializeMetadataPointerInstruction,createInitializeMintInstruction,TYPE_SIZE,LENGTH_SIZE,ExtensionType
 } from "@solana/spl-token"
 import { createInitializeInstruction, pack } from '@solana/spl-token-metadata';
 import { Keypair, SystemProgram, Transaction } from "@solana/web3.js"; 
