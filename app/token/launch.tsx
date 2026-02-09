@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useForm, SubmitHandler } from "react-hook-form"
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { TOKEN_2022_PROGRAM_ID, getMintLen,createInitializeMetadataPointerInstruction,createInitializeMintInstruction,TYPE_SIZE,LENGTH_SIZE,ExtensionType
+import { TOKEN_2022_PROGRAM_ID, getMintLen,createInitializeMetadataPointerInstruction,createInitializeMintInstruction,TYPE_SIZE,LENGTH_SIZE,ExtensionType, getMint
 } from "@solana/spl-token"
 import { createInitializeInstruction, pack } from '@solana/spl-token-metadata';
-import { Keypair, SystemProgram, Transaction } from "@solana/web3.js"; 
+import { Keypair, SystemProgram, Transaction, PublicKey } from "@solana/web3.js"; 
+import { ShowSolBalance } from "../faucet/airdrop";
+import { useState } from "react";
 
 type FormData = {
     tokenName: string,
@@ -16,10 +18,42 @@ type FormData = {
     initialSupply: string
 }
 
+type VerifyFormData = {
+    mintAddress: string
+}
+
 export function Token() {
     const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
+    const { register: registerVerify, handleSubmit: handleVerifySubmit } = useForm<VerifyFormData>();
     const { connection } = useConnection();
     const wallet = useWallet();
+    const [createdToken, setCreatedToken] = useState<{
+        mintAddress: string;
+        signature: string;
+        name: string;
+        symbol: string;
+    } | null>(null);
+    const [verifyResult, setVerifyResult] = useState<string | null>(null);
+
+    const onVerify: SubmitHandler<VerifyFormData> = async (data) => {
+        setVerifyResult("Checking...");
+        try {
+            const mintPubkey = new PublicKey(data.mintAddress);
+            
+            // Try to fetch the mint account
+            const mintInfo = await getMint(
+                connection,
+                mintPubkey,
+                'confirmed',
+                TOKEN_2022_PROGRAM_ID
+            );
+            
+            setVerifyResult(`✅ Token exists!\n\nDecimals: ${mintInfo.decimals}\nSupply: ${mintInfo.supply.toString()}\nMint Authority: ${mintInfo.mintAuthority?.toBase58() || 'None (renounced)'}`);
+        } catch (error) {
+            console.error("Verification error:", error);
+            setVerifyResult(`❌ Token not found or invalid address.\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    };
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         console.log("Form data:", data);
@@ -97,8 +131,28 @@ export function Token() {
             // Send transaction
             const signature = await wallet.sendTransaction(transaction, connection);
             
+            // Wait for confirmation
+            await connection.confirmTransaction(signature, 'confirmed');
+            
+            // Verify the token was created by fetching mint info
+            const mintInfo = await getMint(
+                connection,
+                mintKeypair.publicKey,
+                'confirmed',
+                TOKEN_2022_PROGRAM_ID
+            );
+            
             console.log(`✅ Token mint created at ${mintKeypair.publicKey.toBase58()}`);
             console.log(`Transaction signature: ${signature}`);
+            console.log('Mint Info:', mintInfo);
+            
+            // Store the created token info
+            setCreatedToken({
+                mintAddress: mintKeypair.publicKey.toBase58(),
+                signature: signature,
+                name: data.tokenName,
+                symbol: data.tokenSymbol,
+            });
             
             alert(`Token created successfully! Mint address: ${mintKeypair.publicKey.toBase58()}`);
         } catch (error) {
@@ -129,6 +183,7 @@ export function Token() {
                         </p>
                     </div>
                 )}
+                <ShowSolBalance></ShowSolBalance>
                 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div>
@@ -202,6 +257,97 @@ export function Token() {
                         <li>• You can mint tokens to any wallet address</li>
                     </ul>
                 </div>
+
+                {/* Token Verification Section */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 space-y-4">
+                    <h3 className="text-lg font-bold text-gray-800 text-center">
+                        🔍 Verify Existing Token
+                    </h3>
+                    <p className="text-sm text-gray-600 text-center">
+                        Enter a mint address to check if a token exists
+                    </p>
+                    
+                    <form onSubmit={handleVerifySubmit(onVerify)} className="space-y-3">
+                        <Input 
+                            placeholder="Enter Mint Address to Verify"
+                            {...registerVerify("mintAddress", { required: true })}
+                        />
+                        <Button type="submit" variant="outline" className="w-full">
+                            Verify Token
+                        </Button>
+                    </form>
+
+                    {verifyResult && (
+                        <div className={`p-4 rounded ${verifyResult.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            <pre className="text-xs whitespace-pre-wrap font-mono">
+                                {verifyResult}
+                            </pre>
+                        </div>
+                    )}
+                </div>
+
+                {/* Success Display */}
+                {createdToken && (
+                    <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6 space-y-4">
+                        <div className="text-center">
+                            <h3 className="text-xl font-bold text-green-800 mb-2">
+                                🎉 Token Created Successfully!
+                            </h3>
+                            <p className="text-green-700 font-medium">
+                                {createdToken.name} ({createdToken.symbol})
+                            </p>
+                        </div>
+
+                        <div className="space-y-3 text-sm">
+                            <div className="bg-white rounded p-3">
+                                <p className="text-gray-600 font-medium mb-1">Mint Address:</p>
+                                <p className="font-mono text-xs break-all text-green-700">
+                                    {createdToken.mintAddress}
+                                </p>
+                                <button
+                                    onClick={() => navigator.clipboard.writeText(createdToken.mintAddress)}
+                                    className="mt-2 text-blue-600 hover:text-blue-800 text-xs"
+                                >
+                                    📋 Copy Address
+                                </button>
+                            </div>
+
+                            <div className="bg-white rounded p-3">
+                                <p className="text-gray-600 font-medium mb-1">Transaction Signature:</p>
+                                <p className="font-mono text-xs break-all text-green-700">
+                                    {createdToken.signature}
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <a
+                                    href={`https://explorer.solana.com/address/${createdToken.mintAddress}?cluster=devnet`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded text-center"
+                                >
+                                    View Token on Solana Explorer 🔍
+                                </a>
+                                <a
+                                    href={`https://explorer.solana.com/tx/${createdToken.signature}?cluster=devnet`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded text-center"
+                                >
+                                    View Transaction 📝
+                                </a>
+                                <a
+                                    href={`https://solscan.io/token/${createdToken.mintAddress}?cluster=devnet`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded text-center"
+                                >
+                                    View on Solscan 🔎
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )
