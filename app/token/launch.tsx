@@ -64,10 +64,7 @@ export function Token() {
         }
 
         try {
-            // Generate a new keypair for the mint
             const mintKeypair = Keypair.generate();
-            
-            // Prepare metadata object
             const metadata = {
                 mint: mintKeypair.publicKey,
                 name: data.tokenName,
@@ -76,14 +73,11 @@ export function Token() {
                 additionalMetadata: [],
             };
 
-            // Calculate the space needed for the mint account with metadata
             const mintLen = getMintLen([ExtensionType.MetadataPointer]);
             const metadataLen = TYPE_SIZE + LENGTH_SIZE + pack(metadata).length;
 
-            // Calculate lamports needed for rent exemption
             const lamports = await connection.getMinimumBalanceForRentExemption(mintLen + metadataLen);
 
-            // Create the transaction with all necessary instructions
             const transaction = new Transaction().add(
                 // 1. Create the mint account
                 SystemProgram.createAccount({
@@ -103,9 +97,9 @@ export function Token() {
                 // 3. Initialize the mint
                 createInitializeMintInstruction(
                     mintKeypair.publicKey, 
-                    9, // decimals
-                    wallet.publicKey, // mint authority
-                    null, // freeze authority
+                    9, 
+                    wallet.publicKey, 
+                    null, 
                     TOKEN_2022_PROGRAM_ID
                 ),
                 // 4. Initialize the metadata
@@ -121,20 +115,16 @@ export function Token() {
                 }),
             );
 
-            // Set transaction properties
             transaction.feePayer = wallet.publicKey;
             transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
             
             // Partially sign with the mint keypair
             transaction.partialSign(mintKeypair);
 
-            // Send transaction
             const signature = await wallet.sendTransaction(transaction, connection);
             
-            // Wait for confirmation
             await connection.confirmTransaction(signature, 'confirmed');
             
-            // Verify the token was created by fetching mint info
             const mintInfo = await getMint(
                 connection,
                 mintKeypair.publicKey,
@@ -146,7 +136,6 @@ export function Token() {
             console.log(`Transaction signature: ${signature}`);
             console.log('Mint Info:', mintInfo);
             
-            // Store the created token info
             setCreatedToken({
                 mintAddress: mintKeypair.publicKey.toBase58(),
                 signature: signature,

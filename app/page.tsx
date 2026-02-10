@@ -6,7 +6,7 @@ import { Faucet } from "./faucet/faucet";
 export default function Home() {
   return (
     <div >
-     <Faucet/>
+     wassup
     </div>
   );
 }
