@@ -33,27 +33,6 @@ export function Token() {
         name: string;
         symbol: string;
     } | null>(null);
-    const [verifyResult, setVerifyResult] = useState<string | null>(null);
-
-    const onVerify: SubmitHandler<VerifyFormData> = async (data) => {
-        setVerifyResult("Checking...");
-        try {
-            const mintPubkey = new PublicKey(data.mintAddress);
-            
-            // Try to fetch the mint account
-            const mintInfo = await getMint(
-                connection,
-                mintPubkey,
-                'confirmed',
-                TOKEN_2022_PROGRAM_ID
-            );
-            
-            setVerifyResult(`✅ Token exists!\n\nDecimals: ${mintInfo.decimals}\nSupply: ${mintInfo.supply.toString()}\nMint Authority: ${mintInfo.mintAuthority?.toBase58() || 'None (renounced)'}`);
-        } catch (error) {
-            console.error("Verification error:", error);
-            setVerifyResult(`❌ Token not found or invalid address.\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-    };
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         console.log("Form data:", data);
@@ -236,44 +215,6 @@ export function Token() {
                     </p>
                 </div>
 
-                {/* Info Box */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                    <p className="font-medium mb-2">ℹ️ What happens when you create a token:</p>
-                    <ul className="space-y-1 text-xs">
-                        <li>• A new token mint is created on Solana</li>
-                        <li>• Your metadata (name, symbol, image) is stored on-chain</li>
-                        <li>• You become the mint authority</li>
-                        <li>• You can mint tokens to any wallet address</li>
-                    </ul>
-                </div>
-
-                {/* Token Verification Section */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800 text-center">
-                        🔍 Verify Existing Token
-                    </h3>
-                    <p className="text-sm text-gray-600 text-center">
-                        Enter a mint address to check if a token exists
-                    </p>
-                    
-                    <form onSubmit={handleVerifySubmit(onVerify)} className="space-y-3">
-                        <Input 
-                            placeholder="Enter Mint Address to Verify"
-                            {...registerVerify("mintAddress", { required: true })}
-                        />
-                        <Button type="submit" variant="outline" className="w-full">
-                            Verify Token
-                        </Button>
-                    </form>
-
-                    {verifyResult && (
-                        <div className={`p-4 rounded ${verifyResult.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            <pre className="text-xs whitespace-pre-wrap font-mono">
-                                {verifyResult}
-                            </pre>
-                        </div>
-                    )}
-                </div>
 
                 {/* Success Display */}
                 {createdToken && (
