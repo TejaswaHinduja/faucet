@@ -4,13 +4,26 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useForm, SubmitHandler } from "react-hook-form"
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { TOKEN_2022_PROGRAM_ID, getMintLen,createInitializeMetadataPointerInstruction,createInitializeMintInstruction,TYPE_SIZE,LENGTH_SIZE,ExtensionType, getMint
+import { 
+    TOKEN_2022_PROGRAM_ID, 
+    getMintLen,
+    createInitializeMetadataPointerInstruction,
+    createInitializeMintInstruction,
+    TYPE_SIZE,
+    LENGTH_SIZE,
+    ExtensionType,
 } from "@solana/spl-token"
 import { createInitializeInstruction, pack } from '@solana/spl-token-metadata';
-import { Keypair, SystemProgram, Transaction, PublicKey } from "@solana/web3.js"; 
+import { Keypair, SystemProgram, Transaction } from "@solana/web3.js"; 
 import { ShowSolBalance } from "../faucet/airdrop";
 import { useState } from "react";
-import { getAssociatedTokenAddressSync,createAssociatedTokenAccountInstruction,createMintToInstruction} from "@solana/spl-token";
+import { 
+    getATA, 
+    createATA, 
+    mintTokens, 
+    getMintInfo, 
+    getTokenAccountBalance 
+} from "@/lib/tokenUtils";
 
 
 type FormData = {
@@ -38,15 +51,25 @@ export function Token() {
         symbol: string;
     } | null>(null);
 
+    // State for minting additional tokens
+    const [mintAmount, setMintAmount] = useState("");
+    const [mintRecipient, setMintRecipient] = useState("");
+    const [isMinting, setIsMinting] = useState(false);
+    const [tokenBalance, setTokenBalance] = useState<number | null>(null);
+
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         console.log("Form data:", data);
-        const initialSupplyAmount=data.initialSupply?parseInt(data.initialSupply)*Math.pow(10,9):0;
+        const initialSupplyAmount = data.initialSupply ? parseInt(data.initialSupply) : 0;
 
         if (!wallet.publicKey) {
             alert("Please connect your wallet!");
             return;
         }
+        
         try {
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // 🔹 STEP 1: Create Mint Account
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             const mintKeypair = Keypair.generate();
             const metadata = {
                 mint: mintKeypair.publicKey,
@@ -58,7 +81,6 @@ export function Token() {
 
             const mintLen = getMintLen([ExtensionType.MetadataPointer]);
             const metadataLen = TYPE_SIZE + LENGTH_SIZE + pack(metadata).length;
-
             const lamports = await connection.getMinimumBalanceForRentExemption(mintLen + metadataLen);
             
             const transaction = new Transaction().add(
@@ -70,7 +92,7 @@ export function Token() {
                     lamports,
                     programId: TOKEN_2022_PROGRAM_ID,
                 }),
-                // 2. Initialize the metadata pointer (points to the mint itself)
+                // 2. Initialize the metadata pointer
                 createInitializeMetadataPointerInstruction(
                     mintKeypair.publicKey, 
                     wallet.publicKey, 
@@ -100,23 +122,16 @@ export function Token() {
 
             transaction.feePayer = wallet.publicKey;
             transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-            
-            // Partially sign with the mint keypair
             transaction.partialSign(mintKeypair);
 
             const signature = await wallet.sendTransaction(transaction, connection);
-            
             await connection.confirmTransaction(signature, 'confirmed');
             
-            const mintInfo = await getMint(
-                connection,
-                mintKeypair.publicKey,
-                'confirmed',
-                TOKEN_2022_PROGRAM_ID
-            );
+            // ✅ Use utility function to get mint info
+            const mintInfo = await getMintInfo(connection, mintKeypair.publicKey);
             console.log(`✅ Token mint created at ${mintKeypair.publicKey.toBase58()}`);
-            console.log(`Transaction signature: ${signature}`);
-            console.log('Mint Info:', mintInfo);
+            console.log(`📝 Transaction signature: ${signature}`);
+            console.log('ℹ️  Mint Info:', mintInfo);
             
             setCreatedToken({
                 mintAddress: mintKeypair.publicKey.toBase58(),
@@ -125,65 +140,128 @@ export function Token() {
                 symbol: data.tokenSymbol,
             });
             
-            console.log(`✅ Token mint created successfully!`);
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // 🔹 STEP 2: Create Associated Token Account (ATA)
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             
-            // Step 2: Create Associated Token Account (ATA)
-            const associatedToken = getAssociatedTokenAddressSync(
+            // ✅ Use utility function to get ATA address
+            const associatedToken = getATA(mintKeypair.publicKey, wallet.publicKey);
+            console.log(`🏦 Creating ATA at: ${associatedToken.toBase58()}`);
+            
+            // ✅ Use utility function to create ATA
+            const ataSignature = await createATA(
+                connection,
+                wallet,
                 mintKeypair.publicKey,
-                wallet.publicKey,
-                false,
-                TOKEN_2022_PROGRAM_ID
+                wallet.publicKey
             );
+            console.log(`✅ ATA Created! Signature: ${ataSignature}`);
             
-            console.log(`📦 Creating ATA at: ${associatedToken.toBase58()}`);
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // 🔹 STEP 3: Mint Tokens (if initial supply > 0)
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             
-            const ataTransaction = new Transaction().add(
-                createAssociatedTokenAccountInstruction(
-                    wallet.publicKey,
-                    associatedToken,
-                    wallet.publicKey,
-                    mintKeypair.publicKey,
-                    TOKEN_2022_PROGRAM_ID
-                )
-            );
-            
-            // Send ATA creation transaction
-            const ataSignature = await wallet.sendTransaction(ataTransaction, connection);
-            await connection.confirmTransaction(ataSignature, 'confirmed');
-            console.log(`✅ ATA created! Signature: ${ataSignature}`);
-            
-            // Step 3: Mint tokens to ATA if initial supply > 0
             if (initialSupplyAmount > 0) {
-                console.log(`🪙 Minting ${data.initialSupply} tokens (${initialSupplyAmount} base units)...`);
+                console.log(`🪙 Minting ${data.initialSupply} tokens...`);
                 
-                const mintTransaction = new Transaction().add(
-                    createMintToInstruction(
-                        mintKeypair.publicKey,
-                        associatedToken,
-                        wallet.publicKey,
-                        initialSupplyAmount,
-                        [],
-                        TOKEN_2022_PROGRAM_ID
-                    )
+                // ✅ Use utility function to mint tokens
+                const mintSignature = await mintTokens(
+                    connection,
+                    wallet,
+                    mintKeypair.publicKey,
+                    wallet.publicKey,
+                    initialSupplyAmount,
+                    9,
+                    false // ATA already exists, no need to create
                 );
                 
-                const mintSignature = await wallet.sendTransaction(mintTransaction, connection);
-                await connection.confirmTransaction(mintSignature, 'confirmed');
-                
                 console.log(`✅ Tokens minted! Signature: ${mintSignature}`);
-                alert(`Token created and ${data.initialSupply} tokens minted successfully!`);
+                
+                // ✅ Use utility function to check balance
+                const balanceInfo = await getTokenAccountBalance(
+                    connection,
+                    associatedToken,
+                    9
+                );
+                console.log(`💰 Balance confirmed: ${balanceInfo?.balance} tokens`);
+                
+                alert(`🎉 Token created and ${data.initialSupply} tokens minted successfully!`);
             } else {
-                alert(`Token created successfully! Mint address: ${mintKeypair.publicKey.toBase58()}`);
+                alert(`✅ Token created successfully! Mint address: ${mintKeypair.publicKey.toBase58()}`);
             }
 
-    
+            // Load initial balance
+            await loadTokenBalance(mintKeypair.publicKey.toBase58());
+
         } catch (error) {
-            console.error("Error creating token:", error);
+            console.error("❌ Error creating token:", error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
             alert(`Error creating token: ${errorMessage}`);
         }
     }
-    
+
+    // Function to load token balance
+    const loadTokenBalance = async (mintAddress: string) => {
+        if (!wallet.publicKey) return;
+
+        try {
+            const ata = getATA(mintAddress, wallet.publicKey);
+            const balanceInfo = await getTokenAccountBalance(connection, ata, 9);
+            setTokenBalance(balanceInfo?.balance || 0);
+        } catch (error) {
+            console.error("Error loading balance:", error);
+            setTokenBalance(0);
+        }
+    };
+
+    // Function to mint additional tokens
+    const handleMintMore = async () => {
+        if (!wallet.publicKey || !createdToken) {
+            alert("Please connect wallet and create a token first!");
+            return;
+        }
+
+        if (!mintAmount || parseFloat(mintAmount) <= 0) {
+            alert("Please enter a valid amount!");
+            return;
+        }
+
+        setIsMinting(true);
+
+        try {
+            const recipient = mintRecipient || wallet.publicKey.toBase58();
+
+            console.log(`🪙 Minting ${mintAmount} tokens to ${recipient}...`);
+
+            // Use utility function to mint tokens
+            const signature = await mintTokens(
+                connection,
+                wallet,
+                createdToken.mintAddress,
+                recipient,
+                parseFloat(mintAmount),
+                9,
+                true // Create ATA if needed
+            );
+
+            console.log(`✅ Tokens minted! Signature: ${signature}`);
+            alert(`🎉 Successfully minted ${mintAmount} tokens!\n\nTransaction: ${signature}`);
+
+            // Reload balance
+            await loadTokenBalance(createdToken.mintAddress);
+
+            // Clear inputs
+            setMintAmount("");
+            setMintRecipient("");
+
+        } catch (error) {
+            console.error("❌ Error minting tokens:", error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            alert(`Error minting tokens: ${errorMessage}`);
+        } finally {
+            setIsMinting(false);
+        }
+    };
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
@@ -247,7 +325,7 @@ export function Token() {
                     
                     <div>
                         <Input 
-                            placeholder="Initial Supply (optional - for display)" 
+                            placeholder="Initial Supply (optional)" 
                             type="number"
                             {...register("initialSupply")}
                             disabled={!wallet.publicKey}
@@ -329,6 +407,70 @@ export function Token() {
                                 >
                                     View on Solscan 🔎
                                 </a>
+                            </div>
+                        </div>
+
+                        {/* Token Balance Display */}
+                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <p className="text-gray-600 text-sm">Your Balance</p>
+                                    <p className="text-2xl font-bold text-gray-800">
+                                        {tokenBalance !== null ? tokenBalance : "Loading..."} {createdToken.symbol}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => loadTokenBalance(createdToken.mintAddress)}
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                >
+                                    🔄 Refresh
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Mint More Tokens Section */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h4 className="font-bold text-blue-900 mb-3">🪙 Mint More Tokens</h4>
+                            
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Amount to Mint
+                                    </label>
+                                    <Input
+                                        type="number"
+                                        placeholder="Enter amount (e.g., 1000)"
+                                        value={mintAmount}
+                                        onChange={(e) => setMintAmount(e.target.value)}
+                                        disabled={isMinting}
+                                        className="bg-white"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Recipient Address (Optional)
+                                    </label>
+                                    <Input
+                                        type="text"
+                                        placeholder="Leave empty to mint to yourself"
+                                        value={mintRecipient}
+                                        onChange={(e) => setMintRecipient(e.target.value)}
+                                        disabled={isMinting}
+                                        className="bg-white"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        💡 If recipient doesn't have an account, it will be created automatically
+                                    </p>
+                                </div>
+
+                                <Button
+                                    onClick={handleMintMore}
+                                    disabled={isMinting || !mintAmount}
+                                    className="w-full"
+                                >
+                                    {isMinting ? "Minting..." : `Mint ${mintAmount || "..."} Tokens 🚀`}
+                                </Button>
                             </div>
                         </div>
                     </div>
