@@ -10,6 +10,8 @@ import { createInitializeInstruction, pack } from '@solana/spl-token-metadata';
 import { Keypair, SystemProgram, Transaction, PublicKey } from "@solana/web3.js"; 
 import { ShowSolBalance } from "../faucet/airdrop";
 import { useState } from "react";
+import { getAssociatedTokenAddressSync,createAssociatedTokenAccountInstruction,createMintToInstruction} from "@solana/spl-token";
+
 
 type FormData = {
     tokenName: string,
@@ -25,8 +27,10 @@ type VerifyFormData = {
 export function Token() {
     const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
     const { register: registerVerify, handleSubmit: handleVerifySubmit } = useForm<VerifyFormData>();
+
     const { connection } = useConnection();
     const wallet = useWallet();
+
     const [createdToken, setCreatedToken] = useState<{
         mintAddress: string;
         signature: string;
@@ -36,12 +40,12 @@ export function Token() {
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         console.log("Form data:", data);
-        
+        const initialSupplyAmount=data.initialSupply?parseInt(data.initialSupply)*Math.pow(10,9):0;
+
         if (!wallet.publicKey) {
             alert("Please connect your wallet!");
             return;
         }
-
         try {
             const mintKeypair = Keypair.generate();
             const metadata = {
@@ -56,7 +60,7 @@ export function Token() {
             const metadataLen = TYPE_SIZE + LENGTH_SIZE + pack(metadata).length;
 
             const lamports = await connection.getMinimumBalanceForRentExemption(mintLen + metadataLen);
-
+            
             const transaction = new Transaction().add(
                 // 1. Create the mint account
                 SystemProgram.createAccount({
@@ -110,7 +114,6 @@ export function Token() {
                 'confirmed',
                 TOKEN_2022_PROGRAM_ID
             );
-            
             console.log(`✅ Token mint created at ${mintKeypair.publicKey.toBase58()}`);
             console.log(`Transaction signature: ${signature}`);
             console.log('Mint Info:', mintInfo);
@@ -123,12 +126,49 @@ export function Token() {
             });
             
             alert(`Token created successfully! Mint address: ${mintKeypair.publicKey.toBase58()}`);
+
+            //mint tokens and create ata
+            const associatedToken= getAssociatedTokenAddressSync(
+                mintKeypair.publicKey,
+                wallet.publicKey,
+                false,
+                TOKEN_2022_PROGRAM_ID
+            )
+            const ataTransaction=new Transaction().add(
+                createAssociatedTokenAccountInstruction(
+                    wallet.publicKey,
+                    associatedToken,
+                    wallet.publicKey,
+                    mintKeypair.publicKey,
+                    TOKEN_2022_PROGRAM_ID
+                )
+            )
+            if(initialSupplyAmount>0){
+                const mintnewTokenTransaction=new Transaction().add(
+                    createMintToInstruction(
+                        mintKeypair.publicKey,
+                        associatedToken,
+                        wallet.publicKey,
+                        initialSupplyAmount,
+                        [],
+                        TOKEN_2022_PROGRAM_ID
+                    )
+                )
+                const wait=await wallet.sendTransaction(mintnewTokenTransaction,connection)
+                alert("Token minted to",)
+                console.log(wait)
+
+            }
+
+            
+    
         } catch (error) {
             console.error("Error creating token:", error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
             alert(`Error creating token: ${errorMessage}`);
         }
     }
+    
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
