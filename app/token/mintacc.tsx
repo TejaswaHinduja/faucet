@@ -125,16 +125,19 @@ export function Token() {
                 symbol: data.tokenSymbol,
             });
             
-            alert(`Token created successfully! Mint address: ${mintKeypair.publicKey.toBase58()}`);
-
-            //mint tokens and create ata
-            const associatedToken= getAssociatedTokenAddressSync(
+            console.log(`✅ Token mint created successfully!`);
+            
+            // Step 2: Create Associated Token Account (ATA)
+            const associatedToken = getAssociatedTokenAddressSync(
                 mintKeypair.publicKey,
                 wallet.publicKey,
                 false,
                 TOKEN_2022_PROGRAM_ID
-            )
-            const ataTransaction=new Transaction().add(
+            );
+            
+            console.log(`📦 Creating ATA at: ${associatedToken.toBase58()}`);
+            
+            const ataTransaction = new Transaction().add(
                 createAssociatedTokenAccountInstruction(
                     wallet.publicKey,
                     associatedToken,
@@ -142,9 +145,18 @@ export function Token() {
                     mintKeypair.publicKey,
                     TOKEN_2022_PROGRAM_ID
                 )
-            )
-            if(initialSupplyAmount>0){
-                const mintnewTokenTransaction=new Transaction().add(
+            );
+            
+            // Send ATA creation transaction
+            const ataSignature = await wallet.sendTransaction(ataTransaction, connection);
+            await connection.confirmTransaction(ataSignature, 'confirmed');
+            console.log(`✅ ATA created! Signature: ${ataSignature}`);
+            
+            // Step 3: Mint tokens to ATA if initial supply > 0
+            if (initialSupplyAmount > 0) {
+                console.log(`🪙 Minting ${data.initialSupply} tokens (${initialSupplyAmount} base units)...`);
+                
+                const mintTransaction = new Transaction().add(
                     createMintToInstruction(
                         mintKeypair.publicKey,
                         associatedToken,
@@ -153,14 +165,17 @@ export function Token() {
                         [],
                         TOKEN_2022_PROGRAM_ID
                     )
-                )
-                const wait=await wallet.sendTransaction(mintnewTokenTransaction,connection)
-                alert("Token minted to",)
-                console.log(wait)
-
+                );
+                
+                const mintSignature = await wallet.sendTransaction(mintTransaction, connection);
+                await connection.confirmTransaction(mintSignature, 'confirmed');
+                
+                console.log(`✅ Tokens minted! Signature: ${mintSignature}`);
+                alert(`Token created and ${data.initialSupply} tokens minted successfully!`);
+            } else {
+                alert(`Token created successfully! Mint address: ${mintKeypair.publicKey.toBase58()}`);
             }
 
-            
     
         } catch (error) {
             console.error("Error creating token:", error);
