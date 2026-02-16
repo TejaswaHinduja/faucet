@@ -8,7 +8,7 @@ import { clusterApiUrl } from '@solana/web3.js';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-    // Use custom RPC endpoint from environment variable, fallback to devnet
+
     const endpoint = useMemo(() => {
         return process.env.NEXT_PUBLIC_RPC_ENDPOINT || clusterApiUrl('devnet');
     }, []);

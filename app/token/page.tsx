@@ -1,6 +1,6 @@
 "use client";
 
-import { Token } from "./launch";
+import { Token } from "./mintacc";
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 export default function TokenPage() {

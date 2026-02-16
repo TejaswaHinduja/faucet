@@ -5,7 +5,7 @@ import { WalletModalProvider,WalletDisconnectButton,WalletMultiButton } from "@s
 import { clusterApiUrl } from "@solana/web3.js";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { ShowSolBalance } from "./airdrop";
-import { Token } from "../token/launch";
+import { Token } from "../token/mintacc";
 
 export function Faucet(){
     
