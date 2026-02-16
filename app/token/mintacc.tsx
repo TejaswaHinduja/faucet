@@ -4,33 +4,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useForm, SubmitHandler } from "react-hook-form"
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { 
-    TOKEN_2022_PROGRAM_ID, 
-    getMintLen,
-    createInitializeMetadataPointerInstruction,
-    createInitializeMintInstruction,
-    TYPE_SIZE,
-    LENGTH_SIZE,
-    ExtensionType,
-} from "@solana/spl-token"
+import { TOKEN_2022_PROGRAM_ID, getMintLen,createInitializeMetadataPointerInstruction,createInitializeMintInstruction,TYPE_SIZE,
+LENGTH_SIZE,ExtensionType } from "@solana/spl-token"
 import { createInitializeInstruction, pack } from '@solana/spl-token-metadata';
 import { Keypair, SystemProgram, Transaction } from "@solana/web3.js"; 
 import { ShowSolBalance } from "../faucet/airdrop";
 import { useState } from "react";
-import { 
-    getATA, 
-    createATA, 
-    mintTokens, 
-    getMintInfo, 
-    getTokenAccountBalance 
-} from "@/lib/tokenUtils";
+import { getATA, mintTokens, getTokenBalance } from "@/lib/tokenUtils";
 
 
 type FormData = {
     tokenName: string,
     tokenSymbol: string,
-    imageUrl: string,
-    initialSupply: string
+    imageUrl: string
 }
 
 type VerifyFormData = {
@@ -59,7 +45,6 @@ export function Token() {
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         console.log("Form data:", data);
-        const initialSupplyAmount = data.initialSupply ? parseInt(data.initialSupply) : 0;
 
         if (!wallet.publicKey) {
             alert("Please connect your wallet!");
@@ -92,14 +77,14 @@ export function Token() {
                     lamports,
                     programId: TOKEN_2022_PROGRAM_ID,
                 }),
-                // 2. Initialize the metadata pointer
+
                 createInitializeMetadataPointerInstruction(
                     mintKeypair.publicKey, 
                     wallet.publicKey, 
                     mintKeypair.publicKey, 
                     TOKEN_2022_PROGRAM_ID
                 ),
-                // 3. Initialize the mint
+                
                 createInitializeMintInstruction(
                     mintKeypair.publicKey, 
                     9, 
@@ -107,7 +92,7 @@ export function Token() {
                     null, 
                     TOKEN_2022_PROGRAM_ID
                 ),
-                // 4. Initialize the metadata
+                //  Initialize the metadata
                 createInitializeInstruction({
                     programId: TOKEN_2022_PROGRAM_ID,
                     mint: mintKeypair.publicKey,
@@ -127,11 +112,8 @@ export function Token() {
             const signature = await wallet.sendTransaction(transaction, connection);
             await connection.confirmTransaction(signature, 'confirmed');
             
-            // ✅ Use utility function to get mint info
-            const mintInfo = await getMintInfo(connection, mintKeypair.publicKey);
             console.log(`✅ Token mint created at ${mintKeypair.publicKey.toBase58()}`);
             console.log(`📝 Transaction signature: ${signature}`);
-            console.log('ℹ️  Mint Info:', mintInfo);
             
             setCreatedToken({
                 mintAddress: mintKeypair.publicKey.toBase58(),
@@ -140,58 +122,7 @@ export function Token() {
                 symbol: data.tokenSymbol,
             });
             
-            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            // 🔹 STEP 2: Create Associated Token Account (ATA)
-            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            
-            // ✅ Use utility function to get ATA address
-            const associatedToken = getATA(mintKeypair.publicKey, wallet.publicKey);
-            console.log(`🏦 Creating ATA at: ${associatedToken.toBase58()}`);
-            
-            // ✅ Use utility function to create ATA
-            const ataSignature = await createATA(
-                connection,
-                wallet,
-                mintKeypair.publicKey,
-                wallet.publicKey
-            );
-            console.log(`✅ ATA Created! Signature: ${ataSignature}`);
-            
-            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            // 🔹 STEP 3: Mint Tokens (if initial supply > 0)
-            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            
-            if (initialSupplyAmount > 0) {
-                console.log(`🪙 Minting ${data.initialSupply} tokens...`);
-                
-                // ✅ Use utility function to mint tokens
-                const mintSignature = await mintTokens(
-                    connection,
-                    wallet,
-                    mintKeypair.publicKey,
-                    wallet.publicKey,
-                    initialSupplyAmount,
-                    9,
-                    false // ATA already exists, no need to create
-                );
-                
-                console.log(`✅ Tokens minted! Signature: ${mintSignature}`);
-                
-                // ✅ Use utility function to check balance
-                const balanceInfo = await getTokenAccountBalance(
-                    connection,
-                    associatedToken,
-                    9
-                );
-                console.log(`💰 Balance confirmed: ${balanceInfo?.balance} tokens`);
-                
-                alert(`🎉 Token created and ${data.initialSupply} tokens minted successfully!`);
-            } else {
-                alert(`✅ Token created successfully! Mint address: ${mintKeypair.publicKey.toBase58()}`);
-            }
-
-            // Load initial balance
-            await loadTokenBalance(mintKeypair.publicKey.toBase58());
+            alert(`✅ Token created successfully! Now you can mint tokens manually.`);
 
         } catch (error) {
             console.error("❌ Error creating token:", error);
@@ -206,8 +137,8 @@ export function Token() {
 
         try {
             const ata = getATA(mintAddress, wallet.publicKey);
-            const balanceInfo = await getTokenAccountBalance(connection, ata, 9);
-            setTokenBalance(balanceInfo?.balance || 0);
+            const balance = await getTokenBalance(connection, ata, 9);
+            setTokenBalance(balance);
         } catch (error) {
             console.error("Error loading balance:", error);
             setTokenBalance(0);
@@ -233,15 +164,14 @@ export function Token() {
 
             console.log(`🪙 Minting ${mintAmount} tokens to ${recipient}...`);
 
-            // Use utility function to mint tokens
+            // Use utility function to mint tokens (automatically creates ATA if needed)
             const signature = await mintTokens(
                 connection,
                 wallet,
                 createdToken.mintAddress,
                 recipient,
                 parseFloat(mintAmount),
-                9,
-                true // Create ATA if needed
+                9
             );
 
             console.log(`✅ Tokens minted! Signature: ${signature}`);
@@ -323,16 +253,7 @@ export function Token() {
                         {errors.imageUrl && <span className="text-red-500 text-sm">{errors.imageUrl.message}</span>}
                     </div>
                     
-                    <div>
-                        <Input 
-                            placeholder="Initial Supply (optional)" 
-                            type="number"
-                            {...register("initialSupply")}
-                            disabled={!wallet.publicKey}
-                        />
-                    </div>
-                    
-                    <Button 
+                    <Button
                         type="submit" 
                         className="w-full"
                         disabled={!wallet.publicKey}
