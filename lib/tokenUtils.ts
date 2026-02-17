@@ -22,9 +22,7 @@ export function getATA(mintAddress: PublicKey | string, ownerAddress: PublicKey 
     return getAssociatedTokenAddressSync(mint, owner, false, TOKEN_2022_PROGRAM_ID);
 }
 
-/**
- * Get token account balance for a specific ATA
- */
+
 export async function getTokenBalance(
     connection: Connection,
     ataAddress: PublicKey | string,
@@ -36,14 +34,9 @@ export async function getTokenBalance(
         const tokenAccount = await getAccount(connection, ata, "confirmed", TOKEN_2022_PROGRAM_ID);
         return Number(tokenAccount.amount) / Math.pow(10, decimals);
     } catch (error) {
-        // ATA doesn't exist or error occurred
         return 0;
     }
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔹 TRANSACTION FUNCTIONS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 /**
  * Create an Associated Token Account (ATA)
@@ -99,7 +92,6 @@ export async function mintTokens(
     const mint = typeof mintAddress === "string" ? new PublicKey(mintAddress) : mintAddress;
     const recipient = typeof recipientAddress === "string" ? new PublicKey(recipientAddress) : recipientAddress;
 
-    // Get recipient's ATA
     const recipientATA = getATA(mint, recipient);
 
     // Check if ATA exists

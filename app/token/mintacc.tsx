@@ -37,7 +37,6 @@ export function Token() {
         symbol: string;
     } | null>(null);
 
-    // State for minting additional tokens
     const [mintAmount, setMintAmount] = useState("");
     const [mintRecipient, setMintRecipient] = useState("");
     const [isMinting, setIsMinting] = useState(false);
@@ -112,8 +111,8 @@ export function Token() {
             const signature = await wallet.sendTransaction(transaction, connection);
             await connection.confirmTransaction(signature, 'confirmed');
             
-            console.log(`✅ Token mint created at ${mintKeypair.publicKey.toBase58()}`);
-            console.log(`📝 Transaction signature: ${signature}`);
+            console.log(`Token mint created at ${mintKeypair.publicKey.toBase58()}`);
+            console.log(`Transaction signature: ${signature}`);
             
             setCreatedToken({
                 mintAddress: mintKeypair.publicKey.toBase58(),
@@ -122,10 +121,10 @@ export function Token() {
                 symbol: data.tokenSymbol,
             });
             
-            alert(`✅ Token created successfully! Now you can mint tokens manually.`);
+            alert(`Token created successfully! Now you can mint tokens manually.`);
 
         } catch (error) {
-            console.error("❌ Error creating token:", error);
+            console.error("Error creating token:", error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
             alert(`Error creating token: ${errorMessage}`);
         }
@@ -162,7 +161,7 @@ export function Token() {
         try {
             const recipient = mintRecipient || wallet.publicKey.toBase58();
 
-            console.log(`🪙 Minting ${mintAmount} tokens to ${recipient}...`);
+            console.log(`Minting ${mintAmount} tokens to ${recipient}...`);
 
             // Use utility function to mint tokens (automatically creates ATA if needed)
             const signature = await mintTokens(
@@ -177,10 +176,7 @@ export function Token() {
             console.log(`✅ Tokens minted! Signature: ${signature}`);
             alert(`🎉 Successfully minted ${mintAmount} tokens!\n\nTransaction: ${signature}`);
 
-            // Reload balance
             await loadTokenBalance(createdToken.mintAddress);
-
-            // Clear inputs
             setMintAmount("");
             setMintRecipient("");
 
