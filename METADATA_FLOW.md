@@ -281,14 +281,3 @@ Token Created! 🎉
 
 ---
 
-## 🎓 Understanding the Code
-
-Your `launch.tsx` does this entire flow in ~100 lines:
-- ✅ Collects user input (form)
-- ✅ Creates metadata object
-- ✅ Calculates space and rent
-- ✅ Builds 4-instruction transaction
-- ✅ Signs and sends to blockchain
-- ✅ Confirms and shows result
-
-**That's the power of Solana + modern libraries!** 🚀
