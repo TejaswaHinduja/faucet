@@ -8,6 +8,7 @@ import { TOKEN_2022_PROGRAM_ID, getMintLen,createInitializeMetadataPointerInstru
 LENGTH_SIZE,ExtensionType } from "@solana/spl-token"
 import { createInitializeInstruction, pack } from '@solana/spl-token-metadata';
 import { Keypair, SystemProgram, Transaction } from "@solana/web3.js"; 
+import { ShowSolBalance } from "./show";
 import { useState } from "react";
 import { getATA, mintTokens, getTokenBalance } from "@/lib/tokenUtils";
 
@@ -48,20 +49,13 @@ export function Token() {
             alert("Please connect your wallet!");
             return;
         }
-        async function getBalance() { 
-            if (wallet.publicKey) {
         
-                const balance = await connection.getBalance(wallet.publicKey);
-                //@ts-ignore
-                document.getElementById("balance").innerHTML = balance / LAMPORTS_PER_SOL;
-            }
-        }
         
         
         try {
 
             // Create Mint Account
-            getBalance();
+            
             const mintKeypair = Keypair.generate();
             const metadata = {
                 mint: mintKeypair.publicKey,
@@ -218,7 +212,7 @@ export function Token() {
                         </p>
                     </div>
                 )}
-                    <p>SOL Balance:</p> <div id="balance"></div>
+                    <ShowSolBalance></ShowSolBalance>
                 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div>

@@ -1,3 +1,4 @@
+
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 import {TOKEN_2022_PROGRAM_ID,getAssociatedTokenAddressSync,createAssociatedTokenAccountInstruction,createMintToInstruction,getAccount,} from "@solana/spl-token";
@@ -7,13 +8,13 @@ import {TOKEN_2022_PROGRAM_ID,getAssociatedTokenAddressSync,createAssociatedToke
 /**
  * Get Associated Token Address for a mint and owner
  */
+
 export function getATA(mintAddress: PublicKey | string, ownerAddress: PublicKey | string): PublicKey {
     const mint = typeof mintAddress === "string" ? new PublicKey(mintAddress) : mintAddress;
     const owner = typeof ownerAddress === "string" ? new PublicKey(ownerAddress) : ownerAddress;
 
     return getAssociatedTokenAddressSync(mint, owner, false, TOKEN_2022_PROGRAM_ID);
 }
-
 
 export async function getTokenBalance(
     connection: Connection,
@@ -29,7 +30,6 @@ export async function getTokenBalance(
         return 0;
     }
 }
-
 
 export async function createATA(
     connection: Connection,
