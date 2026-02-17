@@ -1,16 +1,8 @@
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { WalletContextState } from "@solana/wallet-adapter-react";
-import {
-    TOKEN_2022_PROGRAM_ID,
-    getAssociatedTokenAddressSync,
-    createAssociatedTokenAccountInstruction,
-    createMintToInstruction,
-    getAccount,
-} from "@solana/spl-token";
+import {TOKEN_2022_PROGRAM_ID,getAssociatedTokenAddressSync,createAssociatedTokenAccountInstruction,createMintToInstruction,getAccount,} from "@solana/spl-token";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔹 CORE UTILITY FUNCTIONS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 /**
  * Get Associated Token Address for a mint and owner
@@ -38,9 +30,7 @@ export async function getTokenBalance(
     }
 }
 
-/**
- * Create an Associated Token Account (ATA)
- */
+
 export async function createATA(
     connection: Connection,
     wallet: WalletContextState,
@@ -112,7 +102,7 @@ export async function mintTokens(
         );
     }
 
-    // Add mint instruction
+    
     const amountInBaseUnits = amount * Math.pow(10, decimals);
     transaction.add(
         createMintToInstruction(

@@ -14,7 +14,7 @@ export default function TokenPage() {
                 </div>
             </div>
 
-            {/* Main Token Creation Form */}
+            
             <Token />
         </div>
     );
