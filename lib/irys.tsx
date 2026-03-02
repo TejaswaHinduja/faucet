@@ -43,7 +43,6 @@ const ConnectIrys = () => {
       alert("Connect to Irys first");
       return;
     }
-
     try {
       const fundTx = await irysUploader.fund(
         irysUploader.utils.toAtomic(0.0001)
@@ -55,6 +54,21 @@ const ConnectIrys = () => {
     }
   };
 
+  const uploadData = async ()=> {
+    if(!irysUploader){
+      return
+    }
+    const data="Does it work";
+    const tags=[{name:"application-id",value:"EG"}]
+
+    try{
+      const receipt=await irysUploader.upload(data,{tags});
+      alert(`data uploaded https://gateway.irys.xyz/${receipt.id}`)
+    }catch(e){
+      alert(e)
+    }
+  }
+
   return (
     <div>
       <button onClick={connectToIrys}>
@@ -64,6 +78,8 @@ const ConnectIrys = () => {
       <button onClick={fundNode} disabled={!isConnected}>
         Fund Account
       </button>
+
+      <button onClick={uploadData}>Upload data</button>
     </div>
   );
 };
