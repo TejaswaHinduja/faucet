@@ -11,6 +11,7 @@ import { Keypair, SystemProgram, Transaction } from "@solana/web3.js";
 import { ShowSolBalance } from "./show";
 import { useState } from "react";
 import { getATA, mintTokens, getTokenBalance } from "@/lib/tokenUtils";
+import ConnectIrys from "@/lib/irys"
 
 
 type FormData = {
@@ -49,13 +50,8 @@ export function Token() {
             alert("Please connect your wallet!");
             return;
         }
-        
-        
-        
         try {
-
             // Create Mint Account
-            
             const mintKeypair = Keypair.generate();
             const metadata = {
                 mint: mintKeypair.publicKey,
@@ -132,7 +128,6 @@ export function Token() {
         }
     }
 
-    // Function to load token balance
     const loadTokenBalance = async (mintAddress: string) => {
         if (!wallet.publicKey) return;
 
@@ -146,18 +141,15 @@ export function Token() {
         }
     };
 
-    // Function to mint additional tokens
     const handleMintMore = async () => {
         if (!wallet.publicKey || !createdToken) {
             alert("Please connect wallet and create a token first!");
             return;
         }
-
         if (!mintAmount || parseFloat(mintAmount) <= 0) {
             alert("Please enter a valid amount!");
             return;
         }
-
         setIsMinting(true);
 
         try {
@@ -175,15 +167,15 @@ export function Token() {
                 9
             );
 
-            console.log(`✅ Tokens minted! Signature: ${signature}`);
-            alert(`🎉 Successfully minted ${mintAmount} tokens!\n\nTransaction: ${signature}`);
+            console.log(`Tokens minted! Signature: ${signature}`);
+            alert(`Successfully minted ${mintAmount} tokens!\n\nTransaction: ${signature}`);
 
             await loadTokenBalance(createdToken.mintAddress);
             setMintAmount("");
             setMintRecipient("");
 
         } catch (error) {
-            console.error("❌ Error minting tokens:", error);
+            console.error("Error minting tokens:", error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
             alert(`Error minting tokens: ${errorMessage}`);
         } finally {
@@ -213,7 +205,7 @@ export function Token() {
                     </div>
                 )}
                     <ShowSolBalance></ShowSolBalance>
-                
+                <ConnectIrys></ConnectIrys>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div>
                         <Input 

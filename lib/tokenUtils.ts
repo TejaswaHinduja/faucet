@@ -1,7 +1,7 @@
 
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { WalletContextState } from "@solana/wallet-adapter-react";
-import {TOKEN_2022_PROGRAM_ID,getAssociatedTokenAddressSync,createAssociatedTokenAccountInstruction,createMintToInstruction,getAccount,} from "@solana/spl-token";
+import {TOKEN_2022_PROGRAM_ID,getAssociatedTokenAddressSync,createAssociatedTokenAccountInstruction,createMintToInstruction,getAccount} from "@solana/spl-token";
 
 
 

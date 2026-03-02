@@ -1,12 +1,14 @@
 "use client"
+import ConnectIrys from "@/lib/irys";
 import Image from "next/image";
-import { Faucet } from "./faucet/faucet";
+
 
 
 export default function Home() {
   return (
     <div >
      wassup
+     <ConnectIrys></ConnectIrys>
     </div>
   );
 }
