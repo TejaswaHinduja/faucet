@@ -11,9 +11,8 @@ import { Keypair, SystemProgram, Transaction } from "@solana/web3.js";
 import { ShowSolBalance } from "./show";
 import { useState } from "react";
 import { getATA, mintTokens, getTokenBalance } from "@/lib/tokenUtils";
-import ConnectIrys from "@/lib/irys"
 
-
+import { getIrysUploader, fundNode, uploadMetadataJson } from "@/lib/irys";
 type FormData = {
     tokenName: string,
     tokenSymbol: string,
@@ -51,13 +50,25 @@ export function Token() {
             return;
         }
         try {
-            // Create Mint Account
+            // Step 1: Connect to Irys & fund the node
+            console.log("Connecting to Irys...");
+            const irysUploader = await getIrysUploader(wallet);
+            console.log("Irys connected! Funding node...");
+            await fundNode(irysUploader);
+            console.log("Node funded!");
+
+            // Step 2: Upload metadata JSON to Arweave and get the permanent URL
+            console.log("Uploading metadata to Arweave...");
+            const metadataUrl = await uploadMetadataJson(irysUploader, data);
+            console.log("Metadata URL:", metadataUrl);
+
+            // Step 3: Create Mint Account with the Arweave metadata URL as uri
             const mintKeypair = Keypair.generate();
             const metadata = {
                 mint: mintKeypair.publicKey,
                 name: data.tokenName,
                 symbol: data.tokenSymbol,
-                uri: data.imageUrl,
+                uri: metadataUrl,
                 additionalMetadata: [],
             };
 
@@ -205,7 +216,7 @@ export function Token() {
                     </div>
                 )}
                     <ShowSolBalance></ShowSolBalance>
-                <ConnectIrys></ConnectIrys>
+                    
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div>
                         <Input 

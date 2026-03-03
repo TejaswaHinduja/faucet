@@ -1,6 +1,5 @@
 "use client";
 
-import ConnectIrys from "@/lib/irys";
 import { Token } from "./mintacc";
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
