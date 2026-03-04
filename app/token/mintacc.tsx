@@ -44,8 +44,6 @@ export function Token() {
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         console.log("Form data:", data);
-        
-
         if (!wallet.publicKey) {
             alert("Please connect your wallet!");
             return;
