@@ -44,20 +44,21 @@ export function Token() {
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         console.log("Form data:", data);
+        
 
         if (!wallet.publicKey) {
             alert("Please connect your wallet!");
             return;
         }
         try {
-            // Step 1: Connect to Irys & fund the node
+            
             console.log("Connecting to Irys...");
             const irysUploader = await getIrysUploader(wallet);
             console.log("Irys connected! Funding node...");
             await fundNode(irysUploader);
             console.log("Node funded!");
 
-            // Step 2: Upload metadata JSON to Arweave and get the permanent URL
+            
             console.log("Uploading metadata to Arweave...");
             const metadataUrl = await uploadMetadataJson(irysUploader, data);
             console.log("Metadata URL:", metadataUrl);
