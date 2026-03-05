@@ -49,14 +49,11 @@ export function Token() {
             return;
         }
         try {
-            
             console.log("Connecting to Irys...");
             const irysUploader = await getIrysUploader(wallet);
             console.log("Irys connected! Funding node...");
             await fundNode(irysUploader);
             console.log("Node funded!");
-
-            
             console.log("Uploading metadata to Arweave...");
             const metadataUrl = await uploadMetadataJson(irysUploader, data);
             console.log("Metadata URL:", metadataUrl);
@@ -167,7 +164,7 @@ export function Token() {
 
             console.log(`Minting ${mintAmount} tokens to ${recipient}...`);
 
-            // Use utility function to mint tokens (automatically creates ATA if needed)
+            // mint tokens (automatically creates ATA if needed)
             const signature = await mintTokens(
                 connection,
                 wallet,
@@ -245,7 +242,7 @@ export function Token() {
                                 required: "Image URL is required",
                                 pattern: { 
                                     value: /^https?:\/\/.+/,
-                                    message: "Please enter a valid URL starting with http:// or https://"
+                                    message: "Please enter a valid URL starting with https://, also make sure the img is publically available "
                                 }
                             })}
                             disabled={!wallet.publicKey}
@@ -258,12 +255,12 @@ export function Token() {
                         className="w-full"
                         disabled={!wallet.publicKey}
                     >
-                        {wallet.publicKey ? "Create Token 🚀" : "Connect Wallet First"}
+                        {wallet.publicKey ? "Create Token " : "Connect Wallet First"}
                     </Button>
                 </form>
                 
                 <div className="text-sm text-gray-500 text-center space-y-2">
-                    <p>💡 Make sure you have SOL on devnet for transaction fees</p>
+                    <p>Make sure you have SOL on devnet for transaction fees</p>
                     <p className="text-xs">
                         Get devnet SOL: <a href="https://faucet.solana.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">faucet.solana.com</a>
                     </p>
@@ -275,7 +272,7 @@ export function Token() {
                     <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6 space-y-4">
                         <div className="text-center">
                             <h3 className="text-xl font-bold text-green-800 mb-2">
-                                🎉 Token Created Successfully!
+                                 Token Created Successfully!
                             </h3>
                             <p className="text-green-700 font-medium">
                                 {createdToken.name} ({createdToken.symbol})
@@ -326,7 +323,7 @@ export function Token() {
                                     rel="noopener noreferrer"
                                     className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded text-center"
                                 >
-                                    View on Solscan 🔎
+                                    View on Solscan 
                                 </a>
                             </div>
                         </div>
@@ -344,14 +341,14 @@ export function Token() {
                                     onClick={() => loadTokenBalance(createdToken.mintAddress)}
                                     className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                                 >
-                                    🔄 Refresh
+                                    Refresh
                                 </button>
                             </div>
                         </div>
 
                         {/* Mint More Tokens Section */}
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <h4 className="font-bold text-blue-900 mb-3">🪙 Mint More Tokens</h4>
+                            <h4 className="font-bold text-blue-900 mb-3">Mint More Tokens</h4>
                             
                             <div className="space-y-3">
                                 <div>
@@ -381,7 +378,7 @@ export function Token() {
                                         className="bg-white"
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
-                                        💡 If recipient doesn't have an account, it will be created automatically
+                                        If recipient doesn't have an account, it will be created automatically
                                     </p>
                                 </div>
 

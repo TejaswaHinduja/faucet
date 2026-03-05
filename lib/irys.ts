@@ -1,11 +1,6 @@
-
 import { WebUploader } from "@irys/web-upload";
 import { WebSolana } from "@irys/web-upload-solana";
 
-/**
- * Step 1: Connect to Irys using the wallet adapter
- * Returns an Irys uploader instance that can upload data to Arweave
- */
 export const getIrysUploader = async (wallet: any) => {
     try {
         const rpcUrl = process.env.NEXT_PUBLIC_RPC_ENDPOINT;
@@ -18,11 +13,6 @@ export const getIrysUploader = async (wallet: any) => {
         throw new Error("Error connecting to Irys");
     }
 };
-
-/**
- * Step 2: Fund the Irys node so we can upload data
- * On devnet this uses devnet SOL
- */
 export const fundNode = async (irysUploader: any) => {
     if (!irysUploader) {
         throw new Error("Irys uploader not initialized");
@@ -41,23 +31,17 @@ export const fundNode = async (irysUploader: any) => {
 
 /**
  * Step 3: Upload the metadata JSON to Arweave via Irys
- * 
  * Takes the form data (tokenName, tokenSymbol, imageUrl) and:
  * 1. Builds a Metaplex-compatible JSON metadata object
  * 2. Uploads it to Arweave
  * 3. Returns the permanent URL (https://gateway.irys.xyz/<id>)
- * 
- * NOTE: Right now we use the user-provided imageUrl directly.
- * Ideally we'd upload the image to Arweave first, then reference
- * that Arweave image URL in the JSON. That's a future improvement
- * (requires file upload input instead of URL input).
+ * Ideally we'd upload the image to Arweave first,That's a future improvement
  */
 export const uploadMetadataJson = async (
     irysUploader: any,
     data: { tokenName: string; tokenSymbol: string; imageUrl: string }
 ): Promise<string> => {
     // Build the Metaplex-standard metadata JSON
-    // This is what wallets/explorers expect when they fetch the token's URI
     const metadataJson = {
         name: data.tokenName,
         symbol: data.tokenSymbol,
