@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useForm, SubmitHandler } from "react-hook-form"
+import { useForm, SubmitHandler} from "react-hook-form"
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { TOKEN_2022_PROGRAM_ID, getMintLen,createInitializeMetadataPointerInstruction,createInitializeMintInstruction,TYPE_SIZE,
 LENGTH_SIZE,ExtensionType } from "@solana/spl-token"
@@ -24,7 +24,7 @@ type VerifyFormData = {
 }
 
 export function Token() {
-    const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
+    const { register, handleSubmit,getValues, formState: { errors } } = useForm<FormData>();
     const { register: registerVerify, handleSubmit: handleVerifySubmit } = useForm<VerifyFormData>();
 
     const { connection } = useConnection();
@@ -41,7 +41,14 @@ export function Token() {
     const [mintRecipient, setMintRecipient] = useState("");
     const [isMinting, setIsMinting] = useState(false);
     const [tokenBalance, setTokenBalance] = useState<number | null>(null);
-
+    const [metadataurl,setMetaDataUrl]=useState<string | null>(null);
+    const [irys,setIrys]=useState<any>("")
+    const handleUpload=async()=>{
+            const irysUploader = await getIrysUploader(wallet);
+            setIrys(irysUploader)
+            await fundNode(irysUploader);
+            console.log("irys connected and funded")
+    }
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         console.log("Form data:", data);
         if (!wallet.publicKey) {
@@ -49,25 +56,22 @@ export function Token() {
             return;
         }
         try {
-            console.log("Connecting to Irys...");
-            const irysUploader = await getIrysUploader(wallet);
-            console.log("Irys connected! Funding node...");
-            await fundNode(irysUploader);
-            console.log("Node funded!");
-            console.log("Uploading metadata to Arweave...");
-            const metadataUrl = await uploadMetadataJson(irysUploader, data);
-            console.log("Metadata URL:", metadataUrl);
-
+            const metadataUrl = await uploadMetadataJson(irys, data);
+            setMetaDataUrl(metadataUrl)
             // Step 3: Create Mint Account with the Arweave metadata URL as uri
             const mintKeypair = Keypair.generate();
+            if(!metadataurl){
+                alert("Please upload metadata first");
+                return
+            }
             const metadata = {
                 mint: mintKeypair.publicKey,
                 name: data.tokenName,
                 symbol: data.tokenSymbol,
-                uri: metadataUrl,
+                uri: metadataurl,
                 additionalMetadata: [],
             };
-
+            
             const mintLen = getMintLen([ExtensionType.MetadataPointer]);
             const metadataLen = TYPE_SIZE + LENGTH_SIZE + pack(metadata).length;
             const lamports = await connection.getMinimumBalanceForRentExemption(mintLen + metadataLen);
@@ -212,7 +216,8 @@ export function Token() {
                     </div>
                 )}
                     <ShowSolBalance></ShowSolBalance>
-                    
+                   
+                    <Button onClick={handleUpload}>Connect Irys and Fund Node</Button>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div>
                         <Input 
