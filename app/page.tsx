@@ -14,7 +14,6 @@ export default function Home() {
                 </div>
             </div>
             <Token />
-            
         </div>
     );
 }

@@ -29,19 +29,13 @@ export const fundNode = async (irysUploader: any) => {
     }
 };
 
-/**
- * Step 3: Upload the metadata JSON to Arweave via Irys
- * Takes the form data (tokenName, tokenSymbol, imageUrl) and:
- * 1. Builds a Metaplex-compatible JSON metadata object
- * 2. Uploads it to Arweave
- * 3. Returns the permanent URL (https://gateway.irys.xyz/<id>)
+/** Returns the permanent URL (https://gateway.irys.xyz/<id>)
  * Ideally we'd upload the image to Arweave first,That's a future improvement
  */
 export const uploadMetadataJson = async (
     irysUploader: any,
     data: { tokenName: string; tokenSymbol: string; imageUrl: string }
 ): Promise<string> => {
-    // Build the Metaplex-standard metadata JSON
     const metadataJson = {
         name: data.tokenName,
         symbol: data.tokenSymbol,
@@ -57,18 +51,14 @@ export const uploadMetadataJson = async (
             ],
         },
     };
-
     const jsonString = JSON.stringify(metadataJson);
     console.log("Uploading metadata JSON:", jsonString);
-
     const tags = [
         { name: "Content-Type", value: "application/json" },
         { name: "application-id", value: "solana-token-launchpad" },
     ];
-
     const receipt = await irysUploader.upload(jsonString, { tags });
     const metadataUrl = `https://gateway.irys.xyz/${receipt.id}`;
-
     console.log("Metadata uploaded to Arweave!");
     console.log("Receipt ID:", receipt.id);
     console.log("Metadata URL:", metadataUrl);
