@@ -43,22 +43,32 @@ export function Token() {
     const [tokenBalance, setTokenBalance] = useState<number | null>(null);
     const [metadataurl,setMetaDataUrl]=useState<string | null>(null);
     const [irys,setIrys]=useState<any>("")
-    const handleUpload=async()=>{
+
+const handleUpload=async()=>{
             const irysUploader = await getIrysUploader(wallet);
             setIrys(irysUploader)
             await fundNode(irysUploader);
             console.log("irys connected and funded")
+}
+
+const handleMetadataUpload = async () => {
+    const data = getValues();   
+    if (!irys) {
+        alert("Connect to Irys first");
+        return;
     }
-    const onSubmit: SubmitHandler<FormData> = async (data) => {
+    const url = await uploadMetadataJson(irys, data);
+    setMetaDataUrl(url);
+    console.log("Metadata uploaded:", url);
+};
+
+const onSubmit: SubmitHandler<FormData> = async (data) => {
         console.log("Form data:", data);
         if (!wallet.publicKey) {
             alert("Please connect your wallet!");
             return;
         }
         try {
-            const metadataUrl = await uploadMetadataJson(irys, data);
-            setMetaDataUrl(metadataUrl)
-            // Step 3: Create Mint Account with the Arweave metadata URL as uri
             const mintKeypair = Keypair.generate();
             if(!metadataurl){
                 alert("Please upload metadata first");
@@ -254,11 +264,12 @@ export function Token() {
                         />
                         {errors.imageUrl && <span className="text-red-500 text-sm">{errors.imageUrl.message}</span>}
                     </div>
+                    <Button type="button" onClick={handleMetadataUpload}>Upload ur data to irys first</Button>
                     
                     <Button
                         type="submit" 
                         className="w-full"
-                        disabled={!wallet.publicKey}
+                        disabled={!wallet.publicKey || !metadataurl}
                     >
                         {wallet.publicKey ? "Create Token " : "Connect Wallet First"}
                     </Button>
